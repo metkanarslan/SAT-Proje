@@ -2,22 +2,15 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once "db.php"; // Veritabanı bağlantısı
+require_once "db.php"; // PDO bağlantısı: $conn
 
-$query = "SELECT id, isim FROM bolum";
-$result = pg_query($conn, $query);
+try {
+    $stmt = $conn->query("SELECT id, isim FROM bolum");
+    $bolumler = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$bolumler = [];
-
-if ($result) {
-    while ($row = pg_fetch_assoc($result)) {
-        $bolumler[] = $row;
-    }
     echo json_encode($bolumler);
-} else {
+} catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["error" => "Veri çekilirken hata oluştu."]);
+    echo json_encode(["error" => "Veri çekme hatası: " . $e->getMessage()]);
 }
-
-pg_close($conn);
 ?>

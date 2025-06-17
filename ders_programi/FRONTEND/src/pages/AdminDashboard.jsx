@@ -3,6 +3,7 @@ import axios from "axios";
 import styles from "./AdminDashboard.module.css";
 import { Menu, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
   const [departments, setDepartments] = useState([]);
@@ -74,9 +75,9 @@ export default function AdminDashboard() {
                 </a>
               </li>
               <li>
-                <a href="/program-olustur" onClick={() => setMenuOpen(false)}>
+                <Link to="/program-olustur" onClick={() => setMenuOpen(false)}>
                   Program Oluştur
-                </a>
+                </Link>
               </li>
             </ul>
           </motion.div>

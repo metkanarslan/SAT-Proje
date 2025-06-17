@@ -1,17 +1,13 @@
 <?php
-// db.php
-
 $host = "localhost";
-$port = "5432";
-$dbname = "proje";          // veritabanı ismini değiştir
-$user = "postgres";          // PostgreSQL kullanıcı adı
-$password = "12345678"; // şifren
+$dbname = "proje";
+$user = "postgres";
+$password = "12345678";
 
-$conn = pg_connect("host=" . $host . " port=" . $port . " dbname=" . $dbname . " user=" . $user . " password=" . $password);
-
-
-if (!$conn) {
-    echo json_encode(["success" => false, "message" => "Veritabanına bağlanılamadı."]);
-    exit;
+try {
+    $conn = new PDO("pgsql:host=$host;dbname=$dbname", $user, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    $conn = null;
 }
 ?>

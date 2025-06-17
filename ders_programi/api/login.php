@@ -1,7 +1,6 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
-
 require_once("db.php");
 
 $email = $_POST["email"] ?? null;
@@ -12,11 +11,29 @@ if (!$email || !$password) {
     exit;
 }
 
-$sql = "SELECT * FROM kullanici WHERE e_posta = $1 AND sifre = $2";
-$result = pg_query_params($conn, $sql, [$email, $password]);
+try {
+    $sql = "SELECT * FROM kullanici WHERE e_posta = :email";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([':email' => $email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($result && pg_num_rows($result) > 0) {
-    echo json_encode(["success" => true]);
-} else {
-    echo json_encode(["success" => false, "message" => "Eşleşme bulunamadı"]);
+    if ($user) {
+        $dbPassword = $user["sifre"];
+
+        if (password_verify($password, $dbPassword)) {
+            echo json_encode(["success" => true]);
+            exit;
+        }
+
+        if ($password === $dbPassword) {
+            echo json_encode(["success" => true]);
+            exit;
+        }
+
+        echo json_encode(["success" => false, "message" => "Şifre yanlış"]);
+    } else {
+        echo json_encode(["success" => false, "message" => "Kullanıcı bulunamadı"]);
+    }
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "message" => "Veritabanı hatası: " . $e->getMessage()]);
 }

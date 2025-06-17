@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css";
-
-import { useNavigate, Link } from "react-router-dom";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,7 +18,7 @@ function LoginPage() {
     try {
       const res = await axios.post(
         "http://localhost/ders_programi/api/login.php",
-        formData, // JSON değil, form verisi
+        formData,
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -28,8 +27,16 @@ function LoginPage() {
       );
 
       console.log("YANIT:", res.data);
+
+      if (res.data.success) {
+        // ✅ Giriş başarılıysa yönlendir:
+        navigate("/admin");
+      } else {
+        alert("Giriş başarısız: " + res.data.message);
+      }
     } catch (err) {
       console.error("HATA:", err);
+      alert("Sunucu hatası oluştu.");
     }
   };
 
@@ -53,9 +60,6 @@ function LoginPage() {
         />
         <button type="submit">Giriş Yap</button>
       </form>
-      <p>
-        Hesabın yok mu? <Link to="/register">Kayıt Ol</Link>
-      </p>
     </div>
   );
 }

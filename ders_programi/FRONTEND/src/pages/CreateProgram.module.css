@@ -1,0 +1,64 @@
+/* CreateProgram.module.css */
+.container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* select {
+  width: 100%;
+  padding: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+} */
+.saatSelect {
+  width: 100%;
+  padding: 6px;
+  font-size: 14px;
+  min-width: 120px; /* garanti için */
+  box-sizing: border-box;
+}
+.programTable td:first-child {
+  min-width: 140px;
+}
+
+
+
+select, input {
+  margin: 4px 0;
+  padding: 4px;
+  width: 100%;
+}
+
+.programTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.programTable th,
+.programTable td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+  vertical-align: top;
+}
+
+.programTable td select,
+.programTable td input {
+  margin: 2px 0;
+  font-size: 12px;
+}
+
+.submitBtn {
+  margin-top: 20px;
+  padding: 10px 16px;
+  background-color: #3a7bd5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.submitBtn:hover {
+  background-color: #2e5cb8;
+}
