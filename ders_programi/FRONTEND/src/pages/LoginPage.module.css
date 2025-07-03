@@ -63,3 +63,20 @@ body {
 .form-container a:hover {
   text-decoration: underline;
 }
+
+.registerText {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+}
+
+.registerLink {
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.registerLink:hover {
+  color: #0056b3;
+}

@@ -60,6 +60,15 @@ function LoginPage() {
         />
         <button type="submit">Giriş Yap</button>
       </form>
+      <p className={styles.registerText}>
+        Hesabınız yok mu?{" "}
+        <span
+          className={styles.registerLink}
+          onClick={() => navigate("/register")}
+        >
+          Kayıt Ol
+        </span>
+      </p>
     </div>
   );
 }

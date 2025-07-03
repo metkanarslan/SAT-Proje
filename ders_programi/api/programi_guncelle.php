@@ -3,13 +3,6 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
-
-// 🔄 Preflight isteği (OPTIONS) geldiğinde durdur
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
 require_once "db.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -19,21 +12,9 @@ $program = $data['program'];
 $errors = [];
 
 try {
-    // 🔎 Bölüm için zaten program var mı kontrol et
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM ders_programi WHERE bolum_id = ?");
-    $stmt->execute([$bolum_id]);
-
-    if ($stmt->fetchColumn() > 0) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Bu bölüme ait zaten bir program mevcut. Lütfen düzenlemek için EditProgram sayfasını kullanın."
-        ]);
-        exit;
-    }
-
     $conn->beginTransaction();
 
-    // 1. Önce TÜM HATALARI kontrol et
+    // 1. Tüm çakışmaları kontrol et
     foreach ($program as $key => $entry) {
         $parts = explode("_", $key);
         $gun_id = intval($parts[0]);
@@ -45,21 +26,20 @@ try {
         if (!$ders_id || !$ogretmen_id || !$sinif_id) continue;
 
         // Öğretmen çakışması
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM ders_programi WHERE gun_id = ? AND saat_id = ? AND ogretmen_id = ?");
-        $stmt->execute([$gun_id, $saat_id, $ogretmen_id]);
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM ders_programi WHERE gun_id = ? AND saat_id = ? AND ogretmen_id = ? AND bolum_id != ?");
+        $stmt->execute([$gun_id, $saat_id, $ogretmen_id, $bolum_id]);
         if ($stmt->fetchColumn() > 0) {
             $errors[] = "Hoca çakışması: {$gun_id}. gün {$saat_id}. saatte öğretmen başka derste.";
         }
 
         // Sınıf çakışması
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM ders_programi WHERE gun_id = ? AND saat_id = ? AND sinif_id = ?");
-        $stmt->execute([$gun_id, $saat_id, $sinif_id]);
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM ders_programi WHERE gun_id = ? AND saat_id = ? AND sinif_id = ? AND bolum_id != ?");
+        $stmt->execute([$gun_id, $saat_id, $sinif_id, $bolum_id]);
         if ($stmt->fetchColumn() > 0) {
             $errors[] = "Sınıf çakışması: {$gun_id}. gün {$saat_id}. saatte sınıf dolu.";
         }
     }
 
-    // ❌ Hata varsa hiçbir şeyi kaydetmeden çık
     if (count($errors) > 0) {
         $conn->rollBack();
         echo json_encode([
@@ -69,7 +49,10 @@ try {
         exit;
     }
 
-    // ✅ Hiç hata yoksa tümünü ekle
+    // 2. Eski programı sil
+    $conn->prepare("DELETE FROM ders_programi WHERE bolum_id = ?")->execute([$bolum_id]);
+
+    // 3. Yeni programı ekle
     foreach ($program as $key => $entry) {
         $parts = explode("_", $key);
         $gun_id = intval($parts[0]);
@@ -88,16 +71,12 @@ try {
     }
 
     $conn->commit();
-
-    echo json_encode([
-        "success" => true,
-        "message" => "Program başarıyla kaydedildi"
-    ]);
+    echo json_encode(["success" => true]);
 } catch (Exception $e) {
     $conn->rollBack();
     echo json_encode([
         "success" => false,
-        "message" => "Hata oluştu: " . $e->getMessage()
+        "message" => "Sunucu hatası: " . $e->getMessage()
     ]);
 }
 ?>

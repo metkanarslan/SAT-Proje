@@ -1,90 +1,63 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import styles from "./AdminDashboard.module.css";
-import { Menu, User } from "lucide-react";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Menu, User, Pencil, Trash2, ClipboardEdit } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import AdminNavbar from "../components/AdminNavbar";
 
 export default function AdminDashboard() {
   const [departments, setDepartments] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
-  // Verileri çek
   useEffect(() => {
     axios
       .get("http://localhost/ders_programi/api/bolumleri_getir.php")
       .then((res) => {
-        console.log("Gelen veri:", res.data);
         setDepartments(res.data);
-        setFiltered(res.data); // ilk yüklemede tümünü göster
+        setFiltered(res.data);
       })
       .catch((err) => {
         console.error("Veri alınamadı:", err);
       });
   }, []);
 
-  // Arama kutusu değişince filtrele
   useEffect(() => {
     const s = search.trim().toLowerCase();
     if (s === "") {
-      setFiltered(departments); // boşsa tümünü göster
+      setFiltered(departments);
     } else {
       setFiltered(
-        departments.filter(
-          (b) => b?.isim?.toLowerCase().includes(s) // güvenli kontrol
-        )
+        departments.filter((b) => b?.isim?.toLowerCase().includes(s))
       );
     }
   }, [search, departments]);
 
+  const handleDelete = (bolumId) => {
+    if (window.confirm("Bu bölümü silmek istediğinize emin misiniz?")) {
+      axios
+        .post("http://localhost/ders_programi/api/bolum_sil.php", {
+          bolum_id: bolumId,
+        })
+        .then((res) => {
+          if (res.data.success) {
+            alert("Bölüm başarıyla silindi.");
+            setDepartments((prev) => prev.filter((b) => b.id !== bolumId));
+          } else {
+            alert("Silme işlemi başarısız: " + res.data.message);
+          }
+        })
+        .catch((err) => {
+          alert("Sunucu hatası: " + err.message);
+        });
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* Navbar */}
-      <div className={styles.navbar}>
-        <Menu className={styles.icon} onClick={() => setMenuOpen(!menuOpen)} />
-        <h1 className={styles.title}>Yönetici Paneli</h1>
-        <User className={styles.icon} />
-      </div>
+      <AdminNavbar />
 
-      {/* Menü */}
-      {menuOpen && (
-        <>
-          <div className={styles.backdrop} onClick={() => setMenuOpen(false)} />
-          <motion.div
-            initial={{ x: -250 }}
-            animate={{ x: 0 }}
-            exit={{ x: -250 }}
-            className={styles.drawer}
-          >
-            <ul>
-              <li>
-                <a href="/ogretmen-ekle" onClick={() => setMenuOpen(false)}>
-                  Öğretmen Ekle
-                </a>
-              </li>
-              <li>
-                <a href="/bolum-ekle" onClick={() => setMenuOpen(false)}>
-                  Bölüm Ekle
-                </a>
-              </li>
-              <li>
-                <a href="/ders-ekle" onClick={() => setMenuOpen(false)}>
-                  Ders Ekle
-                </a>
-              </li>
-              <li>
-                <Link to="/program-olustur" onClick={() => setMenuOpen(false)}>
-                  Program Oluştur
-                </Link>
-              </li>
-            </ul>
-          </motion.div>
-        </>
-      )}
-
-      {/* İçerik */}
       <div className={styles.content}>
         <input
           type="text"
@@ -94,14 +67,13 @@ export default function AdminDashboard() {
           className={styles.input}
         />
 
-        {/* <p>{filtered.length} bölüm bulundu</p> */}
-
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
                 <th>ID</th>
                 <th>Bölüm İsmi</th>
+                <th className={styles.actionsHeader}>İşlemler</th>
               </tr>
             </thead>
             <tbody>
@@ -109,6 +81,28 @@ export default function AdminDashboard() {
                 <tr key={bolum.id}>
                   <td>{bolum.id}</td>
                   <td>{bolum.isim}</td>
+                  <td className={styles.actionsCell}>
+                    <button
+                      onClick={() => navigate(`/edit-department/${bolum.id}`)}
+                      className={styles.iconButton}
+                    >
+                      <Pencil size={18} />
+                    </button>
+
+                    <button
+                      onClick={() => navigate(`/edit-program/${bolum.id}`)}
+                      className={styles.iconButton}
+                    >
+                      <ClipboardEdit size={18} />
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(bolum.id)}
+                      className={styles.iconButtonn}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

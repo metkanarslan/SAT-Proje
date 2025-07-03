@@ -1,58 +1,68 @@
-// CreateProgram.jsx
 import React, { useEffect, useState } from "react";
-import styles from "./CreateProgram.module.css";
+import { useParams, useNavigate } from "react-router-dom";
+import styles from "./EditProgram.module.css";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
-const CreateProgram = () => {
-  const [bolumler, setBolumler] = useState([]);
-  const [selectedBolum, setSelectedBolum] = useState("");
+const EditProgram = () => {
+  const { bolumId } = useParams();
   const [gunler, setGunler] = useState([]);
   const [saatler, setSaatler] = useState([]);
-  const [dersler, setDersler] = useState([]);
-  const [ogretmenListesi, setOgretmenListesi] = useState({});
-  const [siniflar, setSiniflar] = useState([]);
   const [program, setProgram] = useState({});
+  const [dersler, setDersler] = useState([]);
+  const [siniflar, setSiniflar] = useState([]);
+  const [ogretmenListesi, setOgretmenListesi] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (selectedBolum) {
-      axios
-        .get(
-          `http://localhost/ders_programi/api/siniflari_getir.php?bolum_id=${selectedBolum}`
-        )
-        .then((res) => setSiniflar(res.data));
-    }
-  }, [selectedBolum]);
-
-  useEffect(() => {
-    axios
-      .get("http://localhost/ders_programi/api/bolumleri_getir.php")
-      .then((res) => setBolumler(res.data));
     axios
       .get("http://localhost/ders_programi/api/gunleri_getir.php")
       .then((res) => setGunler(res.data));
     axios
       .get("http://localhost/ders_programi/api/saatleri_getir.php")
       .then((res) => setSaatler(res.data));
-  }, []);
+    axios
+      .get(
+        `http://localhost/ders_programi/api/dersleri_getir.php?bolum_id=${bolumId}`
+      )
+      .then((res) => setDersler(res.data));
+    axios
+      .get(
+        `http://localhost/ders_programi/api/siniflari_getir.php?bolum_id=${bolumId}`
+      )
+      .then((res) => setSiniflar(res.data));
+    axios
+      .get(
+        `http://localhost/ders_programi/api/programi_getir.php?bolum_id=${bolumId}`
+      )
+      .then((res) => setProgram(res.data));
+  }, [bolumId]);
 
   useEffect(() => {
-    if (selectedBolum) {
-      axios
-        .get(
-          `http://localhost/ders_programi/api/dersleri_getir.php?bolum_id=${selectedBolum}`
-        )
-        .then((res) => setDersler(res.data));
+    if (program && Object.keys(program).length > 0) {
+      Object.entries(program).forEach(([key, value]) => {
+        const { ders_id } = value;
+        if (ders_id) {
+          axios
+            .get(
+              `http://localhost/ders_programi/api/ogretmenleri_getir.php?ders_id=${ders_id}&bolum_id=${bolumId}`
+            )
+            .then((res) => {
+              setOgretmenListesi((prev) => ({
+                ...prev,
+                [key]: res.data,
+              }));
+            });
+        }
+      });
     }
-  }, [selectedBolum]);
+  }, [program, bolumId]);
 
   const handleSelectChange = (dayId, timeId, field, value) => {
-    const cellKey = `${dayId}_${timeId}`;
+    const key = `${dayId}_${timeId}`;
     setProgram((prev) => ({
       ...prev,
-      [cellKey]: {
-        ...prev[cellKey],
+      [key]: {
+        ...prev[key],
         [field]: value,
       },
     }));
@@ -60,50 +70,32 @@ const CreateProgram = () => {
     if (field === "ders_id") {
       axios
         .get(
-          `http://localhost/ders_programi/api/ogretmenleri_getir.php?ders_id=${value}&bolum_id=${selectedBolum}`
+          `http://localhost/ders_programi/api/ogretmenleri_getir.php?ders_id=${value}&bolum_id=${bolumId}`
         )
         .then((res) => {
           setOgretmenListesi((prev) => ({
             ...prev,
-            [cellKey]: res.data,
+            [key]: res.data,
           }));
         });
     }
   };
 
-  const handleAutoFillProgram = () => {
+  const handleSubmit = () => {
     axios
-      .post("http://localhost/ders_programi/api/otomatik_program.php", {
-        bolum_id: selectedBolum,
+      .post("http://localhost/ders_programi/api/programi_guncelle.php", {
+        bolum_id: bolumId,
+        program: program,
       })
       .then((res) => {
         const data = res.data;
         if (data.success) {
-          setProgram(data.program);
-          Object.entries(data.program).forEach(([key, val]) => {
-            if (val.ders_id) {
-              axios
-                .get(
-                  `http://localhost/ders_programi/api/ogretmenleri_getir.php?ders_id=${val.ders_id}&bolum_id=${selectedBolum}`
-                )
-                .then((res) => {
-                  setOgretmenListesi((prev) => ({
-                    ...prev,
-                    [key]: res.data,
-                  }));
-                });
-            }
-          });
-          alert("Otomatik program başarıyla oluşturuldu.");
+          alert("Ders programı başarıyla güncellendi.");
+          navigate("/admin");
+        } else if (data.errors && data.errors.length > 0) {
+          alert("Program güncellenemedi:\n\n- " + data.errors.join("\n- "));
         } else {
-          if (data.missing && data.missing.length > 0) {
-            alert(
-              "Otomatik program oluşturulamadı. Yerleştirilemeyen ders ID'leri:\n" +
-                data.missing.join(", ")
-            );
-          } else {
-            alert("Otomatik program oluşturulamadı: " + data.message);
-          }
+          alert("Bir hata oluştu.");
         }
       })
       .catch((err) => {
@@ -112,25 +104,38 @@ const CreateProgram = () => {
       });
   };
 
-  const handleSubmit = () => {
+  const handleAutoFillProgram = () => {
     axios
-      .post("http://localhost/ders_programi/api/createprogram.php", {
-        bolum_id: selectedBolum,
-        program: program,
+      .post("http://localhost/ders_programi/api/otomatik_program.php", {
+        bolum_id: bolumId,
       })
       .then((res) => {
         const data = res.data;
         if (data.success) {
-          if (data.errors && data.errors.length > 0) {
-            alert(
-              `Program kısmen oluşturuldu.\n\n- ${data.errors.join("\n- ")}`
-            );
+          if (!data.program || Object.keys(data.program).length === 0) {
+            alert("Hiçbir ders otomatik olarak yerleştirilemedi.");
           } else {
-            alert("Tüm program başarıyla oluşturuldu.");
-            navigate("/admin");
+            setProgram(data.program);
+            alert("Otomatik program başarıyla oluşturuldu.");
+            // Öğretmen listesini de güncelle
+            Object.entries(data.program).forEach(([key, value]) => {
+              const { ders_id } = value;
+              if (ders_id) {
+                axios
+                  .get(
+                    `http://localhost/ders_programi/api/ogretmenleri_getir.php?ders_id=${ders_id}&bolum_id=${bolumId}`
+                  )
+                  .then((res) => {
+                    setOgretmenListesi((prev) => ({
+                      ...prev,
+                      [key]: res.data,
+                    }));
+                  });
+              }
+            });
           }
         } else {
-          alert("İşlem başarısız: " + (data.message || "Bilinmeyen hata"));
+          alert("Otomatik program oluşturulamadı: " + data.message);
         }
       })
       .catch((err) => {
@@ -141,19 +146,7 @@ const CreateProgram = () => {
 
   return (
     <div className={styles.container}>
-      <h2>Ders Programı Oluştur</h2>
-      <select
-        value={selectedBolum}
-        onChange={(e) => setSelectedBolum(e.target.value)}
-      >
-        <option value="">Bölüm Seçiniz</option>
-        {bolumler.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.isim}
-          </option>
-        ))}
-      </select>
-
+      <h2>Ders Programını Düzenle</h2>
       <table className={styles.programTable}>
         <thead>
           <tr>
@@ -168,16 +161,21 @@ const CreateProgram = () => {
           {saatler.map((saat) => (
             <tr key={saat.id}>
               <td>
-                {saat.baslangic.slice(0, 5)} - {saat.bitis.slice(0, 5)}
+                <select disabled value={saat.id} className={styles.saatSelect}>
+                  <option value="">Saat Seç</option>
+                  <option value={saat.id}>
+                    {saat.baslangic.slice(0, 5)} - {saat.bitis.slice(0, 5)}
+                  </option>
+                </select>
               </td>
               <td>--</td>
               {gunler.map((gun) => {
                 const cellKey = `${gun.id}_${saat.id}`;
-                const cellData = program[cellKey] || {};
+                const current = program[cellKey] || {};
                 return (
                   <td key={cellKey}>
                     <select
-                      value={cellData.ders_id || ""}
+                      value={current.ders_id || ""}
                       onChange={(e) =>
                         handleSelectChange(
                           gun.id,
@@ -194,8 +192,9 @@ const CreateProgram = () => {
                         </option>
                       ))}
                     </select>
+
                     <select
-                      value={cellData.ogretmen_id || ""}
+                      value={current.ogretmen_id || ""}
                       onChange={(e) =>
                         handleSelectChange(
                           gun.id,
@@ -205,15 +204,16 @@ const CreateProgram = () => {
                         )
                       }
                     >
-                      <option value="">Ogretmen Seç</option>
+                      <option value="">Öğretmen Seç</option>
                       {(ogretmenListesi[cellKey] || []).map((o) => (
                         <option key={o.id} value={o.id}>
                           {o.ad_soyad}
                         </option>
                       ))}
                     </select>
+
                     <select
-                      value={cellData.sinif_id || ""}
+                      value={current.sinif_id || ""}
                       onChange={(e) =>
                         handleSelectChange(
                           gun.id,
@@ -238,18 +238,14 @@ const CreateProgram = () => {
         </tbody>
       </table>
 
-      <button
-        onClick={handleAutoFillProgram}
-        className={styles.autoFillBtn}
-        disabled={!selectedBolum}
-      >
+      <button onClick={handleAutoFillProgram} className={styles.autoFillBtn}>
         Otomatik Program Oluştur
       </button>
       <button onClick={handleSubmit} className={styles.submitBtn}>
-        Oluştur
+        Kaydet
       </button>
     </div>
   );
 };
 
-export default CreateProgram;
+export default EditProgram;

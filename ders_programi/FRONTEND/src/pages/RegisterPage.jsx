@@ -148,6 +148,12 @@ const RegisterPage = () => {
         <button type="submit" className={styles.button}>
           Kayıt Ol
         </button>
+        <p className={styles.loginText}>
+          Zaten bir hesabınız var mı?{" "}
+          <span className={styles.loginLink} onClick={() => navigate("/")}>
+            Giriş Yap
+          </span>
+        </p>
       </form>
     </div>
   );

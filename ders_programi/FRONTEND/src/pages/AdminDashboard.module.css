@@ -49,6 +49,7 @@
 
 .content {
   padding: 2rem;
+  margin-top:50px;
 }
 
 .input {
@@ -83,4 +84,61 @@
   width: 100vw;
   height: 100vh;
   z-index: 40;
+}
+
+.actionsHeader {
+  text-align: center;
+  width: 130px;
+}
+
+.actionsCell {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.iconButton {
+  background-color: #4caf50;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+  margin-right: 8px;
+}
+.iconButtonn {
+  background-color:rgb(255, 50, 50);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+  margin-right: 8px;
+}
+
+.iconButton:hover {
+  background-color: #45a049;
+}
+.iconButtonn:hover {
+  background-color: red
+}
+
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }

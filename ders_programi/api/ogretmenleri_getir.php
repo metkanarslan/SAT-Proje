@@ -13,10 +13,11 @@ if (!$ders_id || !$bolum_id) {
 
 try {
     $stmt = $conn->prepare("
-        SELECT ob.id, CONCAT(ob.isim, ' ', ob.soyisim) AS ad_soyad
-        FROM ogr_ders od
-        INNER JOIN ogr_bolum ob ON od.ogr_id = ob.id
-        WHERE od.ders_id = ? AND ob.bolum_id = ?
+       SELECT o.id, CONCAT(o.isim, ' ', o.soyisim) AS ad_soyad
+    FROM ogretmen o
+    INNER JOIN ogr_ders od ON o.id = od.ogr_id
+    INNER JOIN ogr_bolum ob ON o.id = ob.ogr_id
+    WHERE od.ders_id = ? AND ob.bolum_id = ?
     ");
     $stmt->execute([$ders_id, $bolum_id]);
     $ogretmenler = $stmt->fetchAll(PDO::FETCH_ASSOC);
